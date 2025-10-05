@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import supabase from "@/lib/supabase";
+import { User } from '@supabase/supabase-js';
 
 interface Task {
   id: string;
@@ -11,69 +12,239 @@ interface Task {
   status: string;
 }
 
-export default function TaskPage() {
+interface Response {
+  id: string;
+  task_id: string;
+  user_id: string;
+  description: string;
+  image_url: string;
+  likes_count: number;
+}
+
+
+
+export default function TodayTaskPage() {
   const [task, setTask] = useState<Task | null>(null);
+  const [response, setResponse] = useState<Response | null>(null);
+  const [allResponses, setAllResponses] = useState<Response[]>([]);
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchTodayTask();
-  }, []);
+    const loadData = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) return;
+      setUser(userData.user);
 
-  const fetchTodayTask = async () => {
-    try {
-      setLoading(true);
-      const today = format(new Date(), "yyyy-MM-dd");
-
-      const { data: task, error } = await supabase
+      // 1️⃣ Fetch today’s task
+      const today = new Date().toISOString().split("T")[0];
+      const { data: taskData } = await supabase
         .from("tasks")
         .select("*")
         .eq("date", today)
         .single();
 
-      if (error && error.code !== "PGRST116") throw error;
-      setTask(task);
-    } catch (err) {
-      console.error(err);
-    } finally {
+      if (!taskData) {
+        setLoading(false);
+        return;
+      }
+      setTask(taskData);
+
+      // 2️⃣ Fetch user's response (if any)
+      const { data: responseData } = await supabase
+        .from("responses")
+        .select("*")
+        .eq("task_id", taskData.id)
+        .eq("user_id", userData.user.id)
+        .single();
+
+      if (responseData) {
+        setResponse(responseData);
+        setDescription(responseData.description || "");
+      }
+
+      // 3️⃣ If task closed → fetch all responses
+      if (taskData.status === "closed") {
+        const { data: all } = await supabase
+          .from("responses")
+          .select("*")
+          .eq("task_id", taskData.id);
+        setAllResponses(all || []);
+      }
+
       setLoading(false);
-    }
+    };
+
+    loadData();
+  }, []);
+
+  // 🟩 Upload Image + Save Response
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    setImage(file);
   };
 
+  const handleSubmit = async () => {
+    if (!image && !response) {
+      alert("Please capture an image first!");
+      return;
+    }
+
+    let imageUrl = response?.image_url;
+    if (!user) return;
+    // Upload new image if chosen
+    if (image) {
+      const fileName = `${user.id}-${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from("responses")
+        .upload(fileName, image, { upsert: true });
+      if (error) {
+        alert("Upload failed!");
+        return;
+      }
+      const { data: publicUrl } = supabase.storage
+        .from("responses")
+        .getPublicUrl(fileName);
+      imageUrl = publicUrl.publicUrl;
+    }
+
+    if (response) {
+      // Update existing response
+      await supabase
+        .from("responses")
+        .update({ description, image_url: imageUrl })
+        .eq("id", response.id);
+    } else {
+      if (!task || !user) return;
+      // Insert new response
+      await supabase.from("responses").insert({
+        task_id: task.id,
+        user_id: user.id,
+        description,
+        image_url: imageUrl,
+      });
+    }
+
+    alert("Response saved successfully!");
+    window.location.reload();
+  };
+
+  // ❤️ Like function (after close)
+  const handleLike = async (id: string) => {
+    await supabase.rpc("increment_likes", { response_id: id });
+    const updated = allResponses.map((r) =>
+      r.id === id ? { ...r, likes_count: r.likes_count + 1 } : r
+    );
+    setAllResponses(updated);
+  };
+
+  if (loading)
+    return (
+      <main className="flex items-center justify-center min-h-screen text-gray-600">
+        Loading today’s task...
+      </main>
+    );
+
+  if (!task)
+    return (
+      <main className="flex items-center justify-center min-h-screen text-gray-700">
+        No task for today.
+      </main>
+    );
+
   return (
-    <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-4">
-    <div className="w-full max-w-sm bg-white/90 backdrop-blur-md rounded-2xl shadow-lg p-6 text-center">
-      {loading ? (
-        <p className="text-gray-600 text-center animate-pulse">
-          Fetching today’s task...
-        </p>
-      ) : task ? (
-        <>
-          <h1 className="text-xl font-semibold text-indigo-700 mb-3">
-            🗓️ {format(new Date(task.date), "EEEE, MMMM d")}
-          </h1>
+    <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 p-4">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-2xl shadow-lg p-6 mt-10">
+        <h1 className="text-xl font-semibold text-indigo-700 text-center mb-4">
+          🗓️ {format(new Date(task.date), "EEEE, MMMM d")}
+        </h1>
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
+          {task.task}
+        </h2>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            {task.task}
-          </h2>
+        {task.status === "active" ? (
+          <>
+            <p className="text-gray-700 text-center mb-3">
+              📸 Capture a photo related to the task and describe it.
+            </p>
 
-          <span
-            className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              task.status === "active"
-                ? "bg-green-100 text-green-700"
-                : task.status === "closed"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {task.status?.toUpperCase()}
-          </span>
-        </>
-      ) : (
-        <p className="text-gray-700 text-center">
-          No task available for today.
-        </p>
-      )}
-    </div>
-  </main>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleUpload}
+              className="block w-full text-sm mb-3"
+            />
+            {image && (
+              <img
+                src={URL.createObjectURL(image)}
+                alt="preview"
+                className="rounded-lg w-full mb-3 shadow"
+              />
+            )}
+            {response?.image_url && !image && (
+              <img
+                src={response.image_url}
+                alt="existing"
+                className="rounded-lg w-full mb-3 shadow"
+              />
+            )}
+
+            <textarea
+              className="w-full p-2 border border-gray-300 rounded-xl mb-4"
+              placeholder="Describe your photo..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+
+            <button
+              onClick={handleSubmit}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl font-medium"
+            >
+              {response ? "Update Response" : "Submit Response"}
+            </button>
+          </>
+        ) : (
+          <>
+            <h3 className="text-center text-lg font-semibold mb-3">
+              All Responses 📷
+            </h3>
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              {allResponses.length === 0 ? (
+                <p className="text-gray-500 text-center">
+                  No one has responded yet.
+                </p>
+              ) : (
+                allResponses.map((r) => (
+                  <div
+                    key={r.id}
+                    className="bg-gray-50 p-3 rounded-xl shadow-sm"
+                  >
+                    <img
+                      src={r.image_url}
+                      alt="response"
+                      className="rounded-lg w-full mb-2"
+                    />
+                    <p className="text-sm text-gray-700 mb-1">
+                      {r.description}
+                    </p>
+                    <button
+                      onClick={() => handleLike(r.id)}
+                      className="text-indigo-600 text-sm font-medium"
+                    >
+                      ❤️ {r.likes_count || 0} Likes
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </main>
   );
 }
