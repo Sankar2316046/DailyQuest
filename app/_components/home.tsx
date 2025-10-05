@@ -21,8 +21,6 @@ interface Response {
   likes_count: number;
 }
 
-
-
 export default function TodayTaskPage() {
   const [task, setTask] = useState<Task | null>(null);
   const [response, setResponse] = useState<Response | null>(null);
@@ -80,29 +78,30 @@ export default function TodayTaskPage() {
     loadData();
   }, []);
 
-  // 🟩 Upload Image + Save Response
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 🟩 Upload Image
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    const file = files[0];
-    setImage(file);
+    setImage(files[0]);
   };
 
+  // 🟩 Submit Response
   const handleSubmit = async () => {
     if (!image && !response) {
       alert("Please capture an image first!");
       return;
     }
+    if (!user || !task) return;
 
     let imageUrl = response?.image_url;
-    if (!user) return;
-    // Upload new image if chosen
+
+    // Upload image if new
     if (image) {
       const fileName = `${user.id}-${Date.now()}.jpg`;
-      const { data, error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("responses")
         .upload(fileName, image, { upsert: true });
-      if (error) {
+      if (uploadError) {
         alert("Upload failed!");
         return;
       }
@@ -119,21 +118,43 @@ export default function TodayTaskPage() {
         .update({ description, image_url: imageUrl })
         .eq("id", response.id);
     } else {
-      if (!task || !user) return;
       // Insert new response
-      await supabase.from("responses").insert({
-        task_id: task.id,
-        user_id: user.id,
-        description,
-        image_url: imageUrl,
-      });
+      const { data: newResponse, error: responseError } = await supabase
+        .from("responses")
+        .insert({
+          task_id: task.id,
+          user_id: user.id,
+          description,
+          image_url: imageUrl,
+        })
+        .select()
+        .single();
+
+      if (responseError) {
+        console.error("Failed to insert response:", responseError);
+        return;
+      }
+
+      setResponse(newResponse);
+
+      // Award 10 points (only user_id & points)
+      const { data: pointsData, error: pointsError } = await supabase
+        .from("user_points")
+        .upsert(
+          { user_id: user.id, points: 10 },
+          { onConflict: "user_id" }
+        )
+        .select()
+        .single();
+
+      if (pointsError) console.error("Failed to award points:", pointsError);
+      else console.log("Points awarded:", pointsData);
     }
 
     alert("Response saved successfully!");
-    window.location.reload();
   };
 
-  // ❤️ Like function (after close)
+  // ❤️ Like function
   const handleLike = async (id: string) => {
     await supabase.rpc("increment_likes", { response_id: id });
     const updated = allResponses.map((r) =>
@@ -179,6 +200,7 @@ export default function TodayTaskPage() {
               onChange={handleUpload}
               className="block w-full text-sm mb-3"
             />
+
             {image && (
               <img
                 src={URL.createObjectURL(image)}
@@ -186,6 +208,7 @@ export default function TodayTaskPage() {
                 className="rounded-lg w-full mb-3 shadow"
               />
             )}
+
             {response?.image_url && !image && (
               <img
                 src={response.image_url}
