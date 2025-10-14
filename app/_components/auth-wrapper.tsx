@@ -63,7 +63,7 @@ export default function AuthWrapper({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
@@ -76,7 +76,7 @@ export default function AuthWrapper({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="w-full max-w-md border-destructive/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <AlertTriangle className="w-8 h-8 text-red-600 mb-4" />

@@ -51,7 +51,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   }
 
   return (
-    <nav className="w-full flex items-center justify-between px-4 py-3 border-b shadow-sm bg-white dark:bg-black">
+    <nav className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 shadow-sm bg-white text-gray-900">
       {/* Left - Menu button and Title */}
       <div className="flex items-center gap-3">
         <Button
@@ -62,7 +62,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="text-2xl font-bold tracking-tight text-primary dark:text-primary-foreground">
+        <div className="text-2xl text-pink-600 font-bold tracking-tight">
           DailyQuest
         </div>
       </div>

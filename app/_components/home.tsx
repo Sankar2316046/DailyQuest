@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import supabase from "@/lib/supabase";
+import Image from "next/image";
 import { User } from '@supabase/supabase-js';
 
 interface Task {
@@ -11,6 +12,7 @@ interface Task {
   date: string;
   status: string;
 }
+
 
 interface Response {
   id: string;
@@ -165,25 +167,25 @@ export default function TodayTaskPage() {
 
   if (loading)
     return (
-      <main className="flex items-center justify-center min-h-screen text-gray-600">
-        Loading today’s task...
+      <main className="flex items-center justify-center min-h-screen text-purple-600 bg-white">
+        Loading today's task...
       </main>
     );
 
   if (!task)
     return (
-      <main className="flex items-center justify-center min-h-screen text-gray-700">
+      <main className="flex items-center justify-center min-h-screen text-black bg-white">
         No task for today.
       </main>
     );
 
   return (
-    <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 p-4">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-2xl shadow-lg p-6 mt-10">
-        <h1 className="text-xl font-semibold text-indigo-700 text-center mb-4">
+    <main className="flex flex-col items-center justify-start min-h-screen bg-white p-4 text-gray-900">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 sm:p-7 mt-10 border border-gray-200">
+        <h1 className="text-lg sm:text-xl font-semibold text-center mb-1">
           🗓️ {format(new Date(task.date), "EEEE, MMMM d")}
         </h1>
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600">
           {task.task}
         </h2>
 
@@ -193,19 +195,22 @@ export default function TodayTaskPage() {
               📸 Capture a photo related to the task and describe it.
             </p>
 
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleUpload}
-              className="block w-full text-sm mb-3"
-            />
+            <label className="block w-full">
+              <span className="sr-only">Choose image</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleUpload}
+                className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
+              />
+            </label>
 
             {image && (
               <img
                 src={URL.createObjectURL(image)}
                 alt="preview"
-                className="rounded-lg w-full mb-3 shadow"
+                className="rounded-xl w-full mb-3 shadow ring-1 ring-purple-100"
               />
             )}
 
@@ -213,12 +218,12 @@ export default function TodayTaskPage() {
               <img
                 src={response.image_url}
                 alt="existing"
-                className="rounded-lg w-full mb-3 shadow"
+                className="rounded-xl w-full mb-3 shadow ring-1 ring-purple-100"
               />
             )}
 
             <textarea
-              className="w-full p-2 border border-gray-300 rounded-xl mb-4"
+              className="w-full p-3 border border-gray-300 rounded-xl mb-4 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Describe your photo..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -226,43 +231,51 @@ export default function TodayTaskPage() {
 
             <button
               onClick={handleSubmit}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl font-medium"
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white py-3 rounded-xl font-semibold shadow-md"
             >
               {response ? "Update Response" : "Submit Response"}
             </button>
           </>
         ) : (
           <>
-            <h3 className="text-center text-lg font-semibold mb-3">
-              All Responses 📷
+            <h3 className="text-center text-lg font-semibold mb-4 text-gray-900">
+              Community Responses 📷
             </h3>
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="max-h-[70vh] overflow-y-auto">
               {allResponses.length === 0 ? (
-                <p className="text-gray-500 text-center">
-                  No one has responded yet.
-                </p>
+                <div className="text-gray-500 text-center py-12">No one has responded yet.</div>
               ) : (
-                allResponses.map((r) => (
-                  <div
-                    key={r.id}
-                    className="bg-gray-50 p-3 rounded-xl shadow-sm"
-                  >
-                    <img
-                      src={r.image_url}
-                      alt="response"
-                      className="rounded-lg w-full mb-2"
-                    />
-                    <p className="text-sm text-gray-700 mb-1">
-                      {r.description}
-                    </p>
-                    <button
-                      onClick={() => handleLike(r.id)}
-                      className="text-indigo-600 text-sm font-medium"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {allResponses.map((r) => (
+                    <div
+                      key={r.id}
+                      className="bg-white border border-purple-600 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                     >
-                      ❤️ {r.likes_count || 0} Likes
-                    </button>
-                  </div>
-                ))
+                      <Image
+                        src={r.image_url}
+                        alt="response"
+                        className=" object-cover"
+                        width={500}
+                        height={500}
+                      />
+                      <div className="p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <button
+                            onClick={() => handleLike(r.id)}
+                            className={`text-xl transition-colors ${r.likes_count && r.likes_count > 0 ? 'text-red-500' : 'text-purple-600'} hover:text-red-500`}
+                            aria-label="Like response"
+                          >
+                            ❤️
+                          </button>
+                          <span className="text-sm text- font-medium">
+                            {r.likes_count || 0} likes
+                          </span>
+                        </div>
+                        <p className="text-purple-600 leading-relaxed">{r.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </>

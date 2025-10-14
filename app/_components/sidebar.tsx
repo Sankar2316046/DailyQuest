@@ -21,11 +21,11 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   }
 
   return (
-    <div className="h-full w-64 bg-white dark:bg-black border-r shadow-sm">
+    <div className="h-full w-64 bg-white border-r border-gray-200 shadow-sm text-gray-900">
       <div className="flex flex-col p-4 gap-2">
         {/* Mobile close button */}
         <div className="flex justify-between items-center mb-4 md:hidden">
-          <div className="text-2xl font-bold tracking-tight text-primary dark:text-primary-foreground">
+          <div className="text-2xl font-bold tracking-tight text-pink-600">
             DailyQuest
           </div>
           <Button
@@ -39,7 +39,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         </div>
 
         {/* Desktop title */}
-        <div className="hidden md:block text-2xl font-bold tracking-tight text-primary dark:text-primary-foreground mb-8">
+        <div className="hidden md:block text-2xl font-bold tracking-tight text-pink-600 mb-8">
           DailyQuest
         </div>
 
