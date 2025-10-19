@@ -64,33 +64,14 @@ export default function AuthWrapper({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center py-16">
+        {/* <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center py-16"> */}
+          <div className="flex flex-col items-center bg-white justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-muted-foreground">Checking authentication...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Card className="w-full max-w-md border-destructive/50">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <AlertTriangle className="w-8 h-8 text-red-600 mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-red-600">
-              Authentication Required
-            </h3>
-            <p className="text-muted-foreground text-center mb-4">
-              {error}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Redirecting to login page...
-            </p>
-          </CardContent>
-        </Card>
+           
+          </div>
+          {/* </CardContent>
+        </Card> */}
       </div>
     );
   }

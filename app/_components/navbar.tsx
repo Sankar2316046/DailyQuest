@@ -69,22 +69,22 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
+          <Button variant="ghost" className="flex items-center gap-2 px-3 bg-white py-2 hover:bg-transparent">
             <Avatar className="h-8 w-8">
               <AvatarImage src="/avatar.png" alt="Avatar" />
               <AvatarFallback className="flex items-center justify-center">
                 <UserRoundCheckIcon/>
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium text-muted-foreground truncate max-w-24">
+            <span className="text-sm font-medium text-muted-foreground truncate hover:bg-transparent max-w-24">
               {loading ? 'Loading...' : name}
             </span>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-48 p-2" align="end">
-          <div className="flex flex-col gap-1">
-            <div className="px-3 py-2 text-sm font-medium text-muted-foreground border-b">
+        <PopoverContent className="w-48 bg-white border border-gray-200 p-2" align="end">
+          <div className="flex flex-col bg-white gap-1">
+            <div className="px-3 py-2 text-sm font-medium text-muted-foreground   bg-white border-b">
               {loading ? 'Loading...' : name}
             </div>
             <Button
